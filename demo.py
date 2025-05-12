@@ -17,6 +17,7 @@ from PIL import Image, ImageOps
 from face_detection import RetinaFace
 
 from l2cs import select_device, draw_gaze, getArch, Pipeline, render
+from evaluate import classify_gaze_direction
 
 CWD = pathlib.Path.cwd()
 
@@ -36,6 +37,9 @@ def parse_args():
     parser.add_argument(
         '--arch',dest='arch',help='Network architecture, can be: ResNet18, ResNet34, ResNet50, ResNet101, ResNet152',
         default='ResNet50', type=str)
+    parser.add_argument(
+        '--video', dest='video_path', help='Path to video file (optional, overrides --cam)',
+        default=None, type=str)
 
     args = parser.parse_args()
     return args
@@ -53,8 +57,12 @@ if __name__ == '__main__':
         arch='ResNet50',
         device = select_device(args.device, batch_size=1)
     )
-     
-    cap = cv2.VideoCapture(cam)
+    if args.video_path is not None:
+        cap = cv2.VideoCapture(args.video_path)
+        print(f"[INFO] Using video file: {args.video_path}")
+    else:
+        cap = cv2.VideoCapture(args.cam_id)
+        print(f"[INFO] Using webcam with ID {args.cam_id}")
 
     # Check if the webcam is opened correctly
     if not cap.isOpened():
@@ -79,9 +87,23 @@ if __name__ == '__main__':
            
             myFPS = 1.0 / (time.time() - start_fps)
             cv2.putText(frame, 'FPS: {:.1f}'.format(myFPS), (10, 20),cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 1, cv2.LINE_AA)
+            if results.pitch.shape[0] > 0:
+                direction = classify_gaze_direction(results.pitch[0], results.yaw[0])
+                pitch_deg = results.pitch[0] * 180.0 / np.pi
+                yaw_deg = results.yaw[0] * 180.0 / np.pi
+            else:
+                direction = "Not detected"
+                pitch_deg = 0.0
+                yaw_deg = 0.0
+            cv2.putText(frame, f'Direction: {direction}', (10, 45), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 255), 1,
+                        cv2.LINE_AA)
+
+            cv2.putText(frame, f'Pitch: {pitch_deg:.1f}°', (10, 70),
+                        cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 255, 0), 1, cv2.LINE_AA)
+            cv2.putText(frame, f'Yaw: {yaw_deg:.1f}°', (10, 95),
+                        cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 255, 0), 1, cv2.LINE_AA)
 
             cv2.imshow("Demo",frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-            success,frame = cap.read()  
-    
+            success,frame = cap.read()
