@@ -22,8 +22,7 @@ pip install -r install_requirements.txt
 
 Download the pre-trained model weights from the following link and place them in the `models/` directory:
 
-> **Download link**: [Download the pre-trained models from here](#)
-> (⚠️ Replace this with the actual download URL)
+> **Download link**: https://drive.google.com/drive/folders/17p6ORr-JQJcw-eYtG2WGNiuS_qVKwdWd
 
 After downloading, make sure your `models/` folder looks like this:
 
